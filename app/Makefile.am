@@ -1,0 +1,39 @@
+# Single package automake Makefile.am script.
+ACLOCAL_AMFLAGS = -I m4
+
+include $(srcdir)/targets.am
+pkgincludedir = $(includedir)/$(PACKAGE_PARENT)
+
+##pkginclude_HEADERS = include/$(PACKAGE_PARENT)/demo.h
+##pkgconfig_DATA = src/$(PACKAGE_TARNAME).pc
+
+##lib_LIBRARIES = lib$(PACKAGE_TARNAME).a
+##lib_LTLIBRARIES = lib$(PACKAGE_TARNAME).la
+##lib__PACKAGE_TARNAME__la_CFLAGS = $(AM_CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(PCRE_CFLAGS) $(GLIB_CFLAGS)
+##lib__PACKAGE_TARNAME__la_LDFLAGS = $(AM_LDFLAGS) $(LDFLAGS) $(PCRE_LIBS) $(GLIB_LIBS) -version-number `echo $(PACKAGE_VERSION) | $(SED) 'y|.|:|'`
+##lib__PACKAGE_TARNAME__la_SOURCES = src/$(PACKAGE_PARENT)/demo.c
+
+check_PROGRAMS = ts_main$(EXEEXT)
+TESTS = $(check_PROGRAMS)
+
+ts_main_CFLAGS = $(AM_CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(TESTFRWK_CFLAGS) $(GLIB_CFLAGS)
+ts_main_LDFLAGS = $(AM_LDFLAGS) $(LDFLAGS) $(TESTFRWK_LIBS) -lintro_c-util # -l:lib$(PACKAGE_TARNAME).$(SHLIBEXT)
+ts_main_SOURCES = tests/ts_main.c tests/tc_new.c
+
+bin_PROGRAMS = $(PACKAGE_TARNAME)$(EXEEXT)
+__PACKAGE_TARNAME__CFLAGS = $(AM_CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(PCRE_CFLAGS) $(GLIB_CFLAGS) $(LOG4C_CFLAGS) $(YAML_CFLAGS) $(YAJL_CFLAGS) $(JSONC_CFLAGS)
+__PACKAGE_TARNAME__LDFLAGS = $(AM_LDFLAGS) $(LDFLAGS) $(PCRE_LIBS) $(GLIB_LIBS) $(LOG4C_LIBS) $(YAML_LIBS) $(YAJL_LIBS) $(JSONC_LIBS) -lintro_c-util
+__PACKAGE_TARNAME__SOURCES = src/$(PACKAGE_PARENT)/main.c src/$(PACKAGE_PARENT)/demo.c src/$(PACKAGE_PARENT)/person.c
+
+DEBUGGER = ddd --gdb    # ddd --gdb; gdb
+## valgrind tools: memcheck helgrind cachegrind massif lackey
+VALGRIND = valgrind --verbose --tool=memcheck 
+
+.PHONY: run debug valgrind
+run : $(PACKAGE_TARNAME)$(EXEEXT)
+	-cp -fR $(srcdir)/resources .
+	-LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):.libs ./$(PACKAGE_TARNAME)$(EXEEXT) $(ARGS)
+debug : $(PACKAGE_TARNAME)$(EXEEXT)
+	-LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):.libs $(DEBUGGER) ./$(PACKAGE_TARNAME)$(EXEEXT) $(ARGS)
+valgrind : $(PACKAGE_TARNAME)$(EXEEXT)
+	-LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):.libs $(VALGRIND) ./$(PACKAGE_TARNAME)$(EXEEXT)
