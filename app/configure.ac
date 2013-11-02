@@ -76,6 +76,8 @@ PKG_CHECK_MODULES([LOG4C], [log4c], ,
 PKG_CHECK_MODULES([YAML], [yaml-0.1])
 PKG_CHECK_MODULES([YAJL], [yajl])
 PKG_CHECK_MODULES([JSONC], [json-c])
+PKG_CHECK_MODULES([INTRO_CUTIL], [intro_c-util])
+PKG_CHECK_MODULES([USERIFC_CGTK], [userifc_c-gtk])
 AC_CONFIG_SRCDIR([tests/ts_main.c])
 #AC_CONFIG_LINKS([resources/log4crc.xml:resources/log4crc.xml])
 #AC_CONFIG_FILES([resources/log4crc.xml:resources/log4crc.xml])

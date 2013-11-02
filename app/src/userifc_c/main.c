@@ -24,10 +24,11 @@
 #include "intro_c/util.h"
 #include "person.h"
 #include "demo.h"
+#include "userifc_c/gtkhello_controller.h"
 
 #define OVECCOUNT 30
 
-struct opts_record {char name[32];
+struct opts_record {char name[32]; char ifc[16];
 };
 
 static log4c_category_t *root;
@@ -59,21 +60,60 @@ static void run_demo(char *rsrc_path, struct opts_record *opts) {
     pcre_free(re);
 }
 
+static void run_demo_gtk(char *rsrc_path, struct opts_record *opts) {
+    time_t time_in = time(NULL);
+
+    char dateBuf[64], pretextBuf[256];
+
+    //regex_t regex;
+    //compile_regex(&regex, "^quit$", REG_EXTENDED|REG_NEWLINE|REG_ICASE);
+    int ovector[OVECCOUNT];
+    pcre *re = compile_pcre("^quit$", PCRE_CASELESS);//("(?i)^quit$", 0);
+
+    //int rc = match_regex(&regex, opts->name);
+    int rc = match_pcre(re, ovector, opts->name);
+
+    strftime(dateBuf, sizeof(dateBuf), "%c %z %Z", localtime(&time_in));
+    snprintf(pretextBuf, sizeof(pretextBuf) - 1,
+        "(GCC %d.%d) Gtk+ %d.%d GUI\n%s match: %s to %s\n%s\n",
+        __GNUC__, __GNUC_MINOR__, GTK_MAJOR_VERSION, GTK_MINOR_VERSION,
+        (0 > rc) ? "Does not" : "Good", opts->name, "\"^quit$\"", dateBuf);
+
+    //gtk_init(&argc, &argv);
+    gtk_init(NULL, NULL);
+    
+    struct gtkcontroller *uicontroller = gtkcontroller_init("greet.txt",
+        rsrc_path);
+    GtkTextBuffer *txtBuf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(
+        g_hash_table_lookup(uicontroller->view1->extra0, "textview1")));
+    gtk_text_buffer_set_text(txtBuf, pretextBuf, -1);
+    //gtk_widget_show_all(GTK_WIDGET(uicontroller->view1->window1));
+    gtk_main();
+
+    gtkcontroller_cleanup();
+    
+    assert(NULL != re);
+    //regfree(&regex);
+    pcre_free(re);
+}
+
 
 static void print_usage(const char *str) {
-    fprintf(stderr, "Usage: %s [-h][-u NAME]\n", str);
+    fprintf(stderr, "Usage: %s [-h][-u NAME][-i IFC]\n", str);
     exit(EXIT_FAILURE);
 }
 
 void parse_cmdopts(struct opts_record *opts, int argc, char **argv) {
     int8_t opt_ch;
-    const char *opts_str = "u:h";
+    const char *opts_str = "u:hi:";
     log4c_category_log(root, LOG4C_PRIORITY_INFO, "parse_cmdopts()");
     //if (2 > argc)
     //    print_usage(argv[0]);
     while (-1 != (opt_ch = getopt(argc, argv, opts_str))) {
         switch (opt_ch) {
             case 'u': strncpy(opts->name, optarg, 1 + strlen(optarg));
+                break;
+            case 'i': strncpy(opts->ifc, optarg, 1 + strlen(optarg));
                 break;
             default: print_usage(argv[0]);
         }
@@ -114,6 +154,7 @@ int main(int argc, char **argv) {
     root = log4c_category_get("root");
     
     strncpy(opts.name, "World", 1 + strlen("World"));
+    strncpy(opts.ifc, "term", 1 + strlen("term"));
     parse_cmdopts(&opts, argc, argv);
     
     /*char buf_ini[1024], *row_ini[3] = {"????\n", "???", "???"};
@@ -262,7 +303,12 @@ int main(int argc, char **argv) {
         g_error_free(error);
     g_key_file_free(cfg_ini);*/
     
-    run_demo(rsrc_path, &opts);
+    if (0 == strcmp(opts.ifc, "gtk"))
+        run_demo_gtk(rsrc_path, &opts);
+    else if (0 == strcmp(opts.ifc, "term"))
+        run_demo(rsrc_path, &opts);
+    else
+        run_demo(rsrc_path, &opts);
     
     log4c_category_log(root, LOG4C_PRIORITY_DEBUG, "exiting main()");
     log4c_fini();

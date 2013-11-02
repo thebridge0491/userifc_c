@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.69])
-AC_INIT([Userifc_c-Aux], [0.1.0], [thebridge0491-codelab@yahoo.com])
+AC_INIT([Userifc_c-Gtk], [0.1.0], [thebridge0491-codelab@yahoo.com])
 # @PACKAGE_NAME@, @PACKAGE_VERSION@, @PACKAGE_BUGREPORT@
 AC_SUBST([PACKAGE_URL], [bitbucket.org/thebridge0491/userifc_c])
 AC_SUBST([PACKAGE_PARENT], [userifc_c])
@@ -68,9 +68,12 @@ AC_CHECK_FUNCS([clock_gettime gettimeofday memmove regcomp strtol powf])
 
 
 PKG_CHECK_MODULES([TESTFRWK], [check])
-PKG_CHECK_MODULES([PCRE], [libpcre])
 PKG_CHECK_MODULES([GLIB], [glib-2.0])
 PKG_CHECK_MODULES([INTRO_CUTIL], [intro_c-util])
+PKG_CHECK_MODULES([USERIFC_CAUX], [userifc_c-aux])
+PKG_CHECK_MODULES([GMODULE], [gmodule-2.0])
+#PKG_CHECK_MODULES([GTK], [gtk+-2.0])
+PKG_CHECK_MODULES([GTK], [gtk+-3.0])
 AC_CONFIG_SRCDIR([tests/ts_main.c])
 #AC_CONFIG_LINKS([resources/log4crc.xml:resources/log4crc.xml])
 #AC_CONFIG_FILES([resources/log4crc.xml:resources/log4crc.xml])
