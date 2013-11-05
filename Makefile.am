@@ -1,6 +1,6 @@
 # Multi-package project automake Makefile.am script.
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = aux gtk app
+SUBDIRS = aux gtk curses app
 
 .PHONY : help doc run debug valgrind
 .DEFAULT_GOAL = help

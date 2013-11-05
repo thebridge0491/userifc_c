@@ -1,0 +1,15 @@
+prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+includedir=${prefix}/include
+libdir=${exec_prefix}/lib
+
+Name: Userifc_c-Curses
+Description: Curses sub-package for C User interface examples project.
+URL: https://bitbucket.org/thebridge0491/userifc_c
+Version: 0.1.0
+Conflicts: 
+Requires.private: 
+Libs.private: 
+Requires: intro_c-util glib-2.0 ncursesw userifc_c-aux
+Cflags: -I${includedir}
+Libs: -lncurses -lpanel -L${libdir} -luserifc_c-curses

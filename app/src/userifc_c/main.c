@@ -25,6 +25,7 @@
 #include "person.h"
 #include "demo.h"
 #include "userifc_c/gtkhello_controller.h"
+#include "userifc_c/curseshello_controller.h"
 
 #define OVECCOUNT 30
 
@@ -91,6 +92,39 @@ static void run_demo_gtk(char *rsrc_path, struct opts_record *opts) {
     gtk_main();
 
     gtkcontroller_cleanup();
+    
+    assert(NULL != re);
+    //regfree(&regex);
+    pcre_free(re);
+}
+
+static void run_demo_curses(char *rsrc_path, struct opts_record *opts) {
+    time_t time_in = time(NULL);
+
+    char dateBuf[64], pretextBuf[256];
+
+    //regex_t regex;
+    //compile_regex(&regex, "^quit$", REG_EXTENDED|REG_NEWLINE|REG_ICASE);
+    int ovector[OVECCOUNT];
+    pcre *re = compile_pcre("^quit$", PCRE_CASELESS);//("(?i)^quit$", 0);
+
+    //int rc = match_regex(&regex, opts->name);
+    int rc = match_pcre(re, ovector, opts->name);
+
+    strftime(dateBuf, sizeof(dateBuf), "%c %z %Z", localtime(&time_in));
+    snprintf(pretextBuf, sizeof(pretextBuf) - 1,
+        "(GCC %d.%d) Ncurses %s TUI\n%s match: %s to %s\n%s\n",
+        __GNUC__, __GNUC_MINOR__, "???",
+        (0 > rc) ? "Does not" : "Good", opts->name, "\"^quit$\"", dateBuf);
+    
+    struct cursescontroller *uicontroller = cursescontroller_init("greet.txt",
+    	rsrc_path);
+    wattron(uicontroller->view1->extra1, A_REVERSE);
+    mvwaddstr(uicontroller->view1->extra1, 1, 1, pretextBuf);
+    wattroff(uicontroller->view1->extra1, A_REVERSE);
+    cursescontroller_run(uicontroller);
+    
+    cursescontroller_cleanup();
     
     assert(NULL != re);
     //regfree(&regex);
@@ -305,6 +339,8 @@ int main(int argc, char **argv) {
     
     if (0 == strcmp(opts.ifc, "gtk"))
         run_demo_gtk(rsrc_path, &opts);
+    else if (0 == strcmp(opts.ifc, "curses"))
+        run_demo_curses(rsrc_path, &opts);
     else if (0 == strcmp(opts.ifc, "term"))
         run_demo(rsrc_path, &opts);
     else

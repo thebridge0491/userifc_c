@@ -22,5 +22,5 @@ PKG_INSTALLDIR
 
 
 AC_CONFIG_FILES([Makefile])
-AC_CONFIG_SUBDIRS([aux gtk app])
+AC_CONFIG_SUBDIRS([aux gtk curses app])
 AC_OUTPUT
