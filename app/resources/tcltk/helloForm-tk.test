@@ -1,0 +1,94 @@
+#!/bin/sh
+# the next line restarts using [tclsh | wish] \
+exec tclsh "$0" ${1+"$@"}
+
+package require Tk
+package require tcltest
+eval ::tcltest::configure $::argv
+tcltest::configure -testdir [file normalize [file dirname [info script]]]
+tcltest::configure -loadfile [file join [tcltest::testsDirectory] helloForm-tk.tcl]
+tcltest::loadTestedCommands
+
+namespace eval ::helloForm-tk::test {
+  namespace import ::tcltest::*
+  
+  ## test syntax format
+  #test target-majorNum.minorNum {test description}
+  #  ?-constraints keywordList|expressions?
+  #  ?-setup {
+  #  ... # setupScript?
+  #} -body {
+  #  ... # testScript
+  #} ?-cleanup {
+  #  ... #cleanupScript?
+  #} ?-result {
+  #  ... # expectedAnswer?
+  #} ?-output {
+  #  ... # expectedOutput?
+  #} ?-errorOutput {
+  #  ... # expectedError?
+  #} ?-returnCodes {
+  #  ... # codeList? ok return
+  #} ?-match {
+  #  ... # mode? exact, regexp, glob
+  #}
+  
+  #source [file join [tcltest::testsDirectory] helloForm-tk.tcl]
+  if {![winfo exists .frame1]} {
+    lib_main
+  }
+  
+  proc refresh_ui {{delay 2500}} {
+    update idletasks
+    update
+    after $delay
+  }
+  
+  test button1-1.1 {button1 clicked} -body {
+    .dialog1.frameDialog1.entry1 insert end "xxxxxx"
+    button1_clicked_cb .frame1.button1
+    refresh_ui
+    .dialog1.frameDialog1.entry1 get
+  } -result ""
+  
+  test entry1-1.1 {entry1 textChanged} -body {
+    wm deiconify .dialog1
+    entry1_textChanged_cb .dialog1.frameDialog1.entry1
+    refresh_ui
+    .frame1.textview1 get 1.0 end
+  } -result "\n"
+  
+  test entry1-1.2 {entry1 returnPressed} -body {
+    wm deiconify .dialog1
+    .dialog1.frameDialog1.entry1 insert end "John Doe"
+    entry1_returnPressed_cb .dialog1.frameDialog1.entry1
+    refresh_ui
+    .frame1.textview1 get 1.0 end
+  } -cleanup {
+    .dialog1.frameDialog1.entry1 delete 0 end
+  } -result "Hello, John Doe.\n"
+  
+  test entry1-1.3 {entry1 returnPressed dialog1 not viewable} -body {
+    wm deiconify .dialog1
+    .dialog1.frameDialog1.entry1 insert end "John Doe"
+    entry1_returnPressed_cb .dialog1.frameDialog1.entry1
+    refresh_ui
+    .frame1.textview1 get 1.0 end
+    winfo viewable .dialog1
+  } -cleanup {
+    .dialog1.frameDialog1.entry1 delete 0 end
+  } -result 0
+  
+  cleanupTests
+  return
+}
+namespace delete ::helloForm-tk::test
+
+
+# perl -e "use Tcl::pTk ; my $interp = Tcl::pTk->new ; $interp->Eval('set argv {-verbose start,pass,skip,error -debug 3} ; source helloForm-tk.test')"
+# or
+# ruby -e "require 'tk' ; Tk.ip_eval('set argv {-verbose start,pass,skip,error -debug 3} ; source helloForm-tk.test')"
+# or
+# python -c "import tkinter as tk ; interp = tk.Tcl() ; interp.eval('set argv {-verbose start,pass,skip,error -debug 3} ; source helloForm-tk.test')"
+# or
+# tclsh helloForm-tk.test -verbose start,pass,skip,error -debug 3

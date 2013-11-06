@@ -20,6 +20,8 @@
 #include <yajl/yajl_tree.h>
 #include <json-c/json.h>
 #include <yaml.h>
+#include <tcl.h>
+#include <tk.h>
 
 #include "intro_c/util.h"
 #include "person.h"
@@ -29,7 +31,7 @@
 
 #define OVECCOUNT 30
 
-struct opts_record {char name[32]; char ifc[16];
+struct opts_record {char name[32]; char ifc[16]; int extrac; char **extrav;
 };
 
 static log4c_category_t *root;
@@ -131,9 +133,77 @@ static void run_demo_curses(char *rsrc_path, struct opts_record *opts) {
     pcre_free(re);
 }
 
+static int tk_AppInit(Tcl_Interp *interp) {
+    if (Tcl_Init(interp) != TCL_OK) {
+        fprintf(stderr, "Error: Initializing Tcl!\n"); 
+        return TCL_ERROR;
+    }
+    if (Tk_Init(interp) != TCL_OK) {
+        fprintf(stderr, "Error: Initializing Tk!\n");
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+static void run_demo_tcltk(char *rsrc_path, struct opts_record *opts) {
+    time_t time_in = time(NULL);
+
+    char dateBuf[64], pretextBuf[256];
+
+    //regex_t regex;
+    //compile_regex(&regex, "^quit$", REG_EXTENDED|REG_NEWLINE|REG_ICASE);
+    int ovector[OVECCOUNT];
+    pcre *re = compile_pcre("^quit$", PCRE_CASELESS);//("(?i)^quit$", 0);
+
+    //int rc = match_regex(&regex, opts->name);
+    int rc = match_pcre(re, ovector, opts->name);
+
+    strftime(dateBuf, sizeof(dateBuf), "%c %z %Z", localtime(&time_in));
+    snprintf(pretextBuf, sizeof(pretextBuf) - 1,
+        "(GCC %d.%d) Tcl/Tk %s GUI\n%s match: %s to %s\n%s\n",
+        __GNUC__, __GNUC_MINOR__, "???",
+        (0 > rc) ? "Does not" : "Good", opts->name, "\"^quit$\"", dateBuf);
+    
+    char uiform[128];
+    snprintf((char*)uiform, sizeof(uiform) - 1, "%s/%s", rsrc_path,
+        1 > opts->extrac ? "tcltk/helloForm-tk.tcl" : opts->extrav[0]);
+    char *defaultArgs[] = {"--", uiform};
+    char *tkArgs[1 > opts->extrac ? 3 : opts->extrac+1];
+    memcpy(tkArgs, defaultArgs, 2 * sizeof(char*));
+    
+    if (1 > opts->extrac)
+        tkArgs[2] = "-name=helloForm-tk";
+    else
+        memcpy(&tkArgs[2], &opts->extrav[1],
+            (opts->extrac-1) * sizeof(char*));
+    
+    /*Tcl_Interp *interp = Tcl_CreateInterp();
+    tk_AppInit(interp);
+    char *str_setArgv = (char*)calloc(1, sizeof(char)), buf[128], *sep = " ";
+    int len_tkArgs = sizeof(tkArgs) / sizeof(tkArgs[0]);
+    str_append(&str_setArgv, "set argv {");
+    for (int i = 0; (len_tkArgs - 2) > i; ++i) {
+        snprintf(buf, sizeof(buf) / sizeof(buf[0]),
+            "%s%s", (0 == i) ? "" : sep, tkArgs[2+i]);
+        str_append(&str_setArgv, buf);
+    }
+    str_append(&str_setArgv, "}");
+    Tcl_Eval(interp, str_setArgv);
+    //Tcl_EvalFile(interp, tkArgs[1]);
+    snprintf(buf, sizeof(buf) / sizeof(buf[0]), "source %s", tkArgs[1]);
+    Tcl_Eval(interp, buf);
+    Tcl_Eval(interp, "if {![winfo exists .frame1]} {lib_main}");
+    Tk_MainLoop();*/
+    Tk_Main(sizeof(tkArgs) / sizeof(tkArgs[0]), tkArgs, tk_AppInit);
+    
+    assert(NULL != re);
+    //regfree(&regex);
+    pcre_free(re);
+}
+
 
 static void print_usage(const char *str) {
-    fprintf(stderr, "Usage: %s [-h][-u NAME][-i IFC]\n", str);
+    fprintf(stderr, "Usage: %s [-h][-u NAME][-i IFC][extrafile [extraopts ..]]\n", str);
     exit(EXIT_FAILURE);
 }
 
@@ -152,8 +222,11 @@ void parse_cmdopts(struct opts_record *opts, int argc, char **argv) {
             default: print_usage(argv[0]);
         }
     }
-    if (argc > optind)
-        fprintf(stderr, "Unexpected argument after options\n");
+    if (argc > optind) {
+        opts->extrac = argc - optind;
+        opts->extrav = realloc(opts->extrav, opts->extrac * sizeof(argv[0]));
+        memcpy(opts->extrav, &argv[optind], opts->extrac * sizeof(argv[0]));
+    }
 }
 
 static int chk_inidata(GKeyFile *cfg_ini, const char *buf_ini,
@@ -174,7 +247,7 @@ static int chk_inidata(GKeyFile *cfg_ini, const char *buf_ini,
  * @param argc - number of command-line arguments
  * @param argv - array of command-line arguments */
 int main(int argc, char **argv) {
-    struct opts_record opts;
+    struct opts_record opts = {.extrac = 0, .extrav = NULL};
     FILE *fIn;
     char rc_buf[256],
         *rsrc_path = getenv("RSRC_PATH") ? getenv("RSRC_PATH") : "resources";
@@ -341,6 +414,8 @@ int main(int argc, char **argv) {
         run_demo_gtk(rsrc_path, &opts);
     else if (0 == strcmp(opts.ifc, "curses"))
         run_demo_curses(rsrc_path, &opts);
+    else if (0 == strcmp(opts.ifc, "tcltk"))
+        run_demo_tcltk(rsrc_path, &opts);
     else if (0 == strcmp(opts.ifc, "term"))
         run_demo(rsrc_path, &opts);
     else
